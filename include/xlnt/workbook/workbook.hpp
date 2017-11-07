@@ -777,6 +777,12 @@ public:
     /// </summary>
     bool operator!=(const workbook &rhs) const;
 
+
+
+    uint32_t addMedia( const std::string& fileName );
+
+
+
 private:
     friend class streaming_workbook_reader;
     friend class worksheet;
@@ -843,6 +849,9 @@ private:
     /// An opaque pointer to a structure that holds all of the data relating to this workbook.
     /// </summary>
     std::unique_ptr<detail::workbook_impl> d_;
+
+
+    std::vector<std::string> media_;
 };
 
 } // namespace xlnt

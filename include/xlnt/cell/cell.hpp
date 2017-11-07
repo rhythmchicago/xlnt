@@ -67,6 +67,9 @@ struct cell_impl;
 
 } // namespace detail
 
+
+
+
 /// <summary>
 /// Describes a unit of data in a worksheet at a specific coordinate and its
 /// associated properties.
@@ -80,6 +83,8 @@ struct cell_impl;
 class XLNT_API cell
 {
 public:
+
+
     /// <summary>
     /// Alias xlnt::cell_type to xlnt::cell::type since it looks nicer.
     /// </summary>

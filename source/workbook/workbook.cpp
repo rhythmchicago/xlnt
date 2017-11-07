@@ -27,6 +27,7 @@
 #include <fstream>
 #include <functional>
 #include <set>
+#include <sstream>
 
 #include <detail/constants.hpp>
 #include <detail/default_case.hpp>
@@ -128,7 +129,9 @@ xlnt::path default_path(xlnt::relationship_type type, std::size_t index = 0)
     case relationship_type::hyperlink:
         return path("/xl/hyperlink.xml");
     case relationship_type::image:
-        return path("?");
+        // tbj image path
+        // xl/media/image%d.%s", index++, image->extension
+        return path( "xl/media/image" );
     case relationship_type::office_document:
         return path("/xl/workbook.xml");
     case relationship_type::pivot_table:
@@ -207,7 +210,10 @@ std::string content_type(xlnt::relationship_type type)
     case relationship_type::hyperlink:
         throw xlnt::unhandled_switch_case();
     case relationship_type::image:
-        throw xlnt::unhandled_switch_case();
+        // tbj
+        return "image/jpeg";
+
+        // throw xlnt::unhandled_switch_case();
     case relationship_type::office_document:
         return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
     case relationship_type::pivot_table:
@@ -1096,6 +1102,58 @@ bool workbook::operator!=(const workbook &rhs) const
 {
     return d_.get() != rhs.d_.get();
 }
+
+
+//
+// TBJ
+// Register a media file with the workbook
+// 
+uint32_t workbook::addMedia(const std::string& fileName)
+{
+    media_.push_back(fileName);
+    uint32_t id = static_cast<uint32_t>(media_.size());
+
+    path mediaFilePath(fileName);
+
+    std::stringstream item_filename;
+    item_filename << id << "." << mediaFilePath.extension();
+
+    // Get the existing relationship for this workbook
+    auto workbook_rel = d_->manifest_.relationship(path("/"), relationship_type::office_document);
+
+    uri relative_media_uri(path("media").append(item_filename.str()).string());
+    auto absolute_item_path = path("/xl").append(relative_media_uri.path());
+
+    //
+    // Todo: adapt to image type
+    // 
+
+
+
+    /*
+     * Example entries
+     * 	<Default ContentType="image/png" Extension="png"/>
+     *	<Default ContentType="image/jpeg" Extension="jpg"/>
+     */
+
+    //
+    // This line will add the XML entry into the file
+    // manifest::register_default_type(const std::string &extension, const std::string &content_type)
+    // 
+    d_->manifest_.register_default_type(mediaFilePath.extension(), "image/jpeg");
+
+
+    //
+    // Register this media file for the builder
+    //
+    auto media_rel = d_->manifest_.register_relationship(
+        workbook_rel.target(), relationship_type::image, relative_media_uri, target_mode::internal);
+
+
+    return id;
+}
+
+
 
 void workbook::swap(workbook &right)
 {

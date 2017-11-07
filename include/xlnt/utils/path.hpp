@@ -26,6 +26,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <vector>
 
 #include <xlnt/xlnt_config.hpp>
 

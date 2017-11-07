@@ -462,6 +462,8 @@ void xlsx_producer::write_workbook(const relationship &rel)
     static const auto &xmlns_r = constants::ns("r");
     static const auto &xmlns_s = constants::ns("spreadsheetml");
 
+    // TBJ BOOKMARK
+
     write_start_element(xmlns, "workbook");
     write_namespace(xmlns, "");
     write_namespace(xmlns_r, "r");
@@ -738,6 +740,12 @@ void xlsx_producer::write_workbook(const relationship &rel)
         case relationship_type::table_definition:
             break;
         case relationship_type::image:
+            
+            //
+            // TBJ Bookmark
+            //
+            // NOw the real work begins. We need to create a write_image function.
+
             break;
         }
     }

@@ -26,6 +26,12 @@
 #include <cmath>
 #include <sstream>
 
+
+
+// tbj
+#include <cstdio>
+#include <string.h>
+
 #include <detail/implementations/cell_impl.hpp>
 #include <detail/implementations/format_impl.hpp>
 #include <detail/implementations/stylesheet.hpp>
@@ -930,5 +936,26 @@ double cell::height() const
 {
     return worksheet().row_height(row());
 }
+
+
+#if 0
+#ifndef BIG_ENDIAN
+#define UINT32_NETWORK(n) ((((n) & 0xFF)       << 24) | \
+                               (((n) & 0xFF00)     <<  8) | \
+                               (((n) & 0xFF0000)   >>  8) | \
+                               (((n) & 0xFF000000) >> 24))
+#define UINT16_NETWORK(n) ((((n) & 0x00FF) << 8) | (((n) & 0xFF00) >> 8))
+#else
+#define UINT32_NETWORK(n) (n)
+#define UINT16_NETWORK(n) (n)
+#endif
+#endif
+
+
+
+
+
+
+
 
 } // namespace xlnt

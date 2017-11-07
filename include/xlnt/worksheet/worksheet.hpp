@@ -29,6 +29,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 #include <xlnt/xlnt_config.hpp>
 #include <xlnt/cell/index_types.hpp>
@@ -66,6 +67,127 @@ class xlsx_producer;
 struct worksheet_impl;
 
 } // namespace detail
+
+
+// Used with absoluteAchor type
+// Units are EMUs.
+//
+class XLNT_API DisplayPosition
+{
+public:
+    uint32_t x;
+    uint32_t y;
+};
+
+
+// Used with oneCellAnchor and twoCellAchor types
+class XLNT_API CellPosition
+{
+public:
+    // Left edge of image will align with left edge of this column
+    uint32_t col;
+    // Offset from left edge of column
+    uint32_t colOffset;
+    // Top edge of image will align with top edge of this row
+    uint32_t row;
+    // Offset from top edge of row 
+    uint32_t rowOffset;
+};
+
+enum class AnchorType
+{
+    AbsoluteAnchor,
+    OneCellAnchor,
+    TwoCellAnchor
+};
+
+class XLNT_API DrawingPosition
+{
+public:
+
+    AnchorType kind;
+
+    // Used with oneCellAnchor and twoCellAchor types
+    CellPosition from;
+    // Used with oneCellAnchor and twoCellAchor types
+    CellPosition to;
+
+    // Used with AbsoluteAnchor type
+    DisplayPosition displayPosition;
+
+};
+
+
+enum class DrawingType
+{
+    Drawing,
+    Picture
+};
+
+
+//
+// Element representing an Excel Drawing superclass
+//
+class XLNT_API Drawing
+{
+public:
+    // Position of drawing in worksheet
+    DrawingPosition position;
+
+    // Type of drawing
+    DrawingType type;
+
+};
+
+
+//
+// Element representing an Excel Picture subclass of Drawing
+//
+class XLNT_API Image
+    : public Drawing
+{
+public:
+
+    // File system path of image
+    std::string imagePath;
+    // Name of image
+    std::string name;
+    // Description of Image
+    std::string description;
+    // Title of image
+    std::string title;
+    
+    // Type of image. Currently only 'picture' is supported
+    // ooxml schema
+    std::string type;
+
+    // Kind of picture (currently only image is supported)
+    std::string kind;
+
+    // Mime type of image
+    std::string contentType;
+
+    // Media ID of image
+    // An index number that is unique to the workbook,
+    // not just the worksheet.
+    uint32_t id;
+
+
+    std::string noGrp; // pickLocks property
+    std::string noSelect; // pickLocks property
+    std::string noRot; // pickLocks property
+    std::string noChangeAspect; // pickLocks property
+    std::string noMove; // pickLocks property
+    std::string noResize; // pickLocks property
+    std::string noEditPoints; // pickLocks property
+    std::string noAdjustHandles; // pickLocks property
+    std::string noChangeArrowheads; // pickLocks property
+    std::string noChangeShapeType; // pickLocks property 
+
+};
+
+
+
 
 /// <summary>
 /// A worksheet is a 2D array of cells starting with cell A1 in the top-left corner
@@ -119,6 +241,19 @@ public:
     /// For example, unreference styles and empty cells will be removed.
     /// </summary>
     void garbage_collect();
+
+
+
+    ///////////////////
+
+    // TBJ
+    // Set an image as the value of the cell.
+    //
+    Image& addImage(const Image& image);
+
+
+    //////////////////
+
 
     // identification
 
@@ -745,6 +880,9 @@ private:
     /// The pointer to this sheet's implementation.
     /// </summary>
     detail::worksheet_impl *d_;
+
+
+    std::map<uint32_t, Drawing> drawings_;
 };
 
 } // namespace xlnt

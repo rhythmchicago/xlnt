@@ -73,6 +73,577 @@ worksheet::worksheet(const worksheet &rhs)
 {
 }
 
+
+///////////////////////
+
+
+#if 0
+/*
+ * Set up image/drawings.
+ */
+void
+lxw_worksheet_prepare_image(lxw_worksheet *self,
+                            uint16_t image_ref_id, uint16_t drawing_id,
+                            lxw_image_options *image_data)
+{
+    lxw_drawing_object *drawing_object;
+    lxw_rel_tuple *relationship;
+    double width;
+    double height;
+    char filename[LXW_FILENAME_LENGTH];
+
+    if (!self->drawing) {
+        self->drawing = lxw_drawing_new();
+        self->drawing->embedded = LXW_TRUE;
+        RETURN_VOID_ON_MEM_ERROR(self->drawing);
+
+        relationship = calloc(1, sizeof(lxw_rel_tuple));
+        GOTO_LABEL_ON_MEM_ERROR(relationship, mem_error);
+
+        relationship->type = lxw_strdup("/drawing");
+        GOTO_LABEL_ON_MEM_ERROR(relationship->type, mem_error);
+
+        lxw_snprintf(filename, LXW_FILENAME_LENGTH,
+                     "../drawings/drawing%d.xml", drawing_id);
+
+        relationship->target = lxw_strdup(filename);
+        GOTO_LABEL_ON_MEM_ERROR(relationship->target, mem_error);
+
+        STAILQ_INSERT_TAIL(self->external_drawing_links, relationship,
+                           list_pointers);
+    }
+
+    drawing_object = calloc(1, sizeof(lxw_drawing_object));
+    RETURN_VOID_ON_MEM_ERROR(drawing_object);
+
+    drawing_object->anchor_type = LXW_ANCHOR_TYPE_IMAGE;
+    drawing_object->edit_as = LXW_ANCHOR_EDIT_AS_ONE_CELL;
+    drawing_object->description = lxw_strdup(image_data->short_name);
+
+    /* Scale to user scale. */
+    width = image_data->width * image_data->x_scale;
+    height = image_data->height * image_data->y_scale;
+
+    /* Scale by non 96dpi resolutions. */
+    width *= 96.0 / image_data->x_dpi;
+    height *= 96.0 / image_data->y_dpi;
+
+    /* Convert to the nearest pixel. */
+    image_data->width = width;
+    image_data->height = height;
+
+    _worksheet_position_object_emus(self, image_data, drawing_object);
+
+    /* Convert from pixels to emus. */
+    drawing_object->width = (uint32_t) (0.5 + width * 9525);
+    drawing_object->height = (uint32_t) (0.5 + height * 9525);
+
+    lxw_add_drawing_object(self->drawing, drawing_object);
+
+    relationship = calloc(1, sizeof(lxw_rel_tuple));
+    GOTO_LABEL_ON_MEM_ERROR(relationship, mem_error);
+
+    relationship->type = lxw_strdup("/image");
+    GOTO_LABEL_ON_MEM_ERROR(relationship->type, mem_error);
+
+    lxw_snprintf(filename, 32, "../media/image%d.%s", image_ref_id,
+                 image_data->extension);
+
+    relationship->target = lxw_strdup(filename);
+    GOTO_LABEL_ON_MEM_ERROR(relationship->target, mem_error);
+
+    STAILQ_INSERT_TAIL(self->drawing_links, relationship, list_pointers);
+
+    return;
+
+mem_error:
+    if (relationship) {
+        free(relationship->type);
+        free(relationship->target);
+        free(relationship->target_mode);
+        free(relationship);
+    }
+}
+
+#if 0
+/*
+ * Set up chart/drawings.
+ */
+void
+lxw_worksheet_prepare_chart(lxw_worksheet *self,
+                            uint16_t chart_ref_id, uint16_t drawing_id,
+                            lxw_image_options *image_data)
+{
+    lxw_drawing_object *drawing_object;
+    lxw_rel_tuple *relationship;
+    double width;
+    double height;
+    char filename[LXW_FILENAME_LENGTH];
+
+    if (!self->drawing) {
+        self->drawing = lxw_drawing_new();
+        self->drawing->embedded = LXW_TRUE;
+        RETURN_VOID_ON_MEM_ERROR(self->drawing);
+
+        relationship = calloc(1, sizeof(lxw_rel_tuple));
+        GOTO_LABEL_ON_MEM_ERROR(relationship, mem_error);
+
+        relationship->type = lxw_strdup("/drawing");
+        GOTO_LABEL_ON_MEM_ERROR(relationship->type, mem_error);
+
+        lxw_snprintf(filename, LXW_FILENAME_LENGTH,
+                     "../drawings/drawing%d.xml", drawing_id);
+
+        relationship->target = lxw_strdup(filename);
+        GOTO_LABEL_ON_MEM_ERROR(relationship->target, mem_error);
+
+        STAILQ_INSERT_TAIL(self->external_drawing_links, relationship,
+                           list_pointers);
+    }
+
+    drawing_object = calloc(1, sizeof(lxw_drawing_object));
+    RETURN_VOID_ON_MEM_ERROR(drawing_object);
+
+    drawing_object->anchor_type = LXW_ANCHOR_TYPE_CHART;
+    drawing_object->edit_as = LXW_ANCHOR_EDIT_AS_ONE_CELL;
+    drawing_object->description = lxw_strdup("TODO_DESC");
+
+    /* Scale to user scale. */
+    width = image_data->width * image_data->x_scale;
+    height = image_data->height * image_data->y_scale;
+
+    /* Convert to the nearest pixel. */
+    image_data->width = width;
+    image_data->height = height;
+
+    _worksheet_position_object_emus(self, image_data, drawing_object);
+
+    /* Convert from pixels to emus. */
+    drawing_object->width = (uint32_t) (0.5 + width * 9525);
+    drawing_object->height = (uint32_t) (0.5 + height * 9525);
+
+    lxw_add_drawing_object(self->drawing, drawing_object);
+
+    relationship = calloc(1, sizeof(lxw_rel_tuple));
+    GOTO_LABEL_ON_MEM_ERROR(relationship, mem_error);
+
+    relationship->type = lxw_strdup("/chart");
+    GOTO_LABEL_ON_MEM_ERROR(relationship->type, mem_error);
+
+    lxw_snprintf(filename, 32, "../charts/chart%d.xml", chart_ref_id);
+
+    relationship->target = lxw_strdup(filename);
+    GOTO_LABEL_ON_MEM_ERROR(relationship->target, mem_error);
+
+    STAILQ_INSERT_TAIL(self->drawing_links, relationship, list_pointers);
+
+    return;
+
+mem_error:
+    if (relationship) {
+        free(relationship->type);
+        free(relationship->target);
+        free(relationship->target_mode);
+        free(relationship);
+    }
+}
+
+#endif
+
+
+
+
+/*
+ * Extract width and height information from a PNG file.
+ */
+static bool _process_png(ImageOptions *image_options)
+{
+    uint32_t length;
+    uint32_t offset;
+    char type[4];
+    uint32_t width = 0;
+    uint32_t height = 0;
+    double x_dpi = 96;
+    double y_dpi = 96;
+    int fseek_err;
+
+    FILE *stream = image_options->stream;
+
+    /* Skip another 4 bytes to the end of the PNG header. */
+    fseek_err = fseek(stream, 4, SEEK_CUR);
+    if (fseek_err)
+        goto file_error;
+
+    while (!feof(stream)) 
+    {
+
+        /* Read the PNG length and type fields for the sub-section. */
+        if (fread(&length, sizeof(length), 1, stream) < 1)
+            break;
+
+        if (fread(&type, 1, 4, stream) < 4)
+            break;
+
+        /* Convert the length to network order. */
+        length = UINT32_NETWORK(length);
+
+        /* The offset for next fseek() is the field length + type length. */
+        offset = length + 4;
+
+        if (memcmp(type, "IHDR", 4) == 0) 
+        {
+            if (fread(&width, sizeof(width), 1, stream) < 1)
+                break;
+
+            if (fread(&height, sizeof(height), 1, stream) < 1)
+                break;
+
+            width = UINT32_NETWORK(width);
+            height = UINT32_NETWORK(height);
+
+            /* Reduce the offset by the length of previous freads(). */
+            offset -= 8;
+        }
+
+        if (memcmp(type, "pHYs", 4) == 0) 
+        {
+            uint32_t x_ppu = 0;
+            uint32_t y_ppu = 0;
+            uint8_t units = 1;
+
+            if (fread(&x_ppu, sizeof(x_ppu), 1, stream) < 1)
+                break;
+
+            if (fread(&y_ppu, sizeof(y_ppu), 1, stream) < 1)
+                break;
+
+            if (fread(&units, sizeof(units), 1, stream) < 1)
+                break;
+
+            if (units == 1) {
+                x_ppu = UINT32_NETWORK(x_ppu);
+                y_ppu = UINT32_NETWORK(y_ppu);
+
+                x_dpi = (double) x_ppu *0.0254;
+                y_dpi = (double) y_ppu *0.0254;
+            }
+
+            /* Reduce the offset by the length of previous freads(). */
+            offset -= 9;
+        }
+
+        if (memcmp(type, "IEND", 4) == 0)
+            break;
+
+        if (!feof(stream)) 
+        {
+            fseek_err = fseek(stream, offset, SEEK_CUR);
+            if (fseek_err)
+                goto file_error;
+        }
+    }
+
+    /* Ensure that we read some valid data from the file. */
+    if (width == 0)
+        goto file_error;
+
+    /* Set the image metadata. */
+    image_options->image_type = cell::ImageType::IMAGE_PNG;
+    image_options->width = width;
+    image_options->height = height;
+    image_options->x_dpi = x_dpi ? x_dpi : 96;
+    image_options->y_dpi = y_dpi ? x_dpi : 96;
+    image_options->extension = strdup("png");
+
+    return true;
+
+file_error:
+    //LXW_WARN_FORMAT1("worksheet_insert_image()/_opt(): "
+    //                 "no size data found in file: %s.",
+    //                 image_options->filename);
+
+    return false;
+}
+
+/*
+ * Extract width and height information from a JPEG file.
+ */
+static bool _process_jpeg(ImageOptions *image_options)
+{
+    uint16_t length;
+    uint16_t marker;
+    uint32_t offset;
+    uint16_t width = 0;
+    uint16_t height = 0;
+    double x_dpi = 96;
+    double y_dpi = 96;
+    int fseek_err;
+
+    FILE *stream = image_options->stream;
+
+    /* Read back 2 bytes to the end of the initial 0xFFD8 marker. */
+    fseek_err = fseek(stream, -2, SEEK_CUR);
+    if (fseek_err)
+        goto file_error;
+
+    /* Search through the image data to read the height and width in the */
+    /* 0xFFC0/C2 element. Also read the DPI in the 0xFFE0 element. */
+    while (!feof(stream)) 
+    {
+
+        /* Read the JPEG marker and length fields for the sub-section. */
+        if (fread(&marker, sizeof(marker), 1, stream) < 1)
+            break;
+
+        if (fread(&length, sizeof(length), 1, stream) < 1)
+            break;
+
+        /* Convert the marker and length to network order. */
+        marker = UINT16_NETWORK(marker);
+        length = UINT16_NETWORK(length);
+
+        /* The offset for next fseek() is the field length + type length. */
+        offset = length - 2;
+
+        if (marker == 0xFFC0 || marker == 0xFFC2) 
+        {
+            /* Skip 1 byte to height and width. */
+            fseek_err = fseek(stream, 1, SEEK_CUR);
+            if (fseek_err)
+                goto file_error;
+
+            if (fread(&height, sizeof(height), 1, stream) < 1)
+                break;
+
+            if (fread(&width, sizeof(width), 1, stream) < 1)
+                break;
+
+            height = UINT16_NETWORK(height);
+            width = UINT16_NETWORK(width);
+
+            offset -= 9;
+        }
+
+        if (marker == 0xFFE0) 
+        {
+            uint16_t x_density = 0;
+            uint16_t y_density = 0;
+            uint8_t units = 1;
+
+            fseek_err = fseek(stream, 7, SEEK_CUR);
+            if (fseek_err)
+                goto file_error;
+
+            if (fread(&units, sizeof(units), 1, stream) < 1)
+                break;
+
+            if (fread(&x_density, sizeof(x_density), 1, stream) < 1)
+                break;
+
+            if (fread(&y_density, sizeof(y_density), 1, stream) < 1)
+                break;
+
+            x_density = UINT16_NETWORK(x_density);
+            y_density = UINT16_NETWORK(y_density);
+
+            if (units == 1) {
+                x_dpi = x_density;
+                y_dpi = y_density;
+            }
+
+            if (units == 2) 
+            {
+                x_dpi = x_density * 2.54;
+                y_dpi = y_density * 2.54;
+            }
+
+            offset -= 12;
+        }
+
+        if (marker == 0xFFDA)
+            break;
+
+        if (!feof(stream)) 
+        {
+            fseek_err = fseek(stream, offset, SEEK_CUR);
+            if (fseek_err)
+                goto file_error;
+        }
+    }
+
+    /* Ensure that we read some valid data from the file. */
+    if (width == 0)
+        goto file_error;
+
+    /* Set the image metadata. */
+    image_options->image_type = cell::ImageType::IMAGE_JPEG;
+    image_options->width = width;
+    image_options->height = height;
+    image_options->x_dpi = x_dpi ? x_dpi : 96;
+    image_options->y_dpi = y_dpi ? x_dpi : 96;
+    image_options->extension = strdup("jpeg");
+
+    return true;
+
+file_error:
+    //LXW_WARN_FORMAT1("worksheet_insert_image()/_opt(): "
+    //                 "no size data found in file: %s.",
+    //                 image_options->filename);
+
+    return false;
+}
+
+/*
+ * Extract width and height information from a BMP file.
+ */
+static bool _process_bmp(ImageOptions *image_options)
+{
+    uint32_t width = 0;
+    uint32_t height = 0;
+    double x_dpi = 96;
+    double y_dpi = 96;
+    int fseek_err;
+
+    FILE *stream = image_options->stream;
+
+    /* Skip another 14 bytes to the start of the BMP height/width. */
+    fseek_err = fseek(stream, 14, SEEK_CUR);
+    if (fseek_err)
+        goto file_error;
+
+    if (fread(&width, sizeof(width), 1, stream) < 1)
+        width = 0;
+
+    if (fread(&height, sizeof(height), 1, stream) < 1)
+        height = 0;
+
+    /* Ensure that we read some valid data from the file. */
+    if (width == 0)
+        goto file_error;
+
+    /* Set the image metadata. */
+    image_options->image_type = cell::ImageType::IMAGE_BMP;
+    image_options->width = width;
+    image_options->height = height;
+    image_options->x_dpi = x_dpi;
+    image_options->y_dpi = y_dpi;
+    image_options->extension = strdup("bmp");
+
+    return true;
+
+file_error:
+    //LXW_WARN_FORMAT1("worksheet_insert_image()/_opt(): "
+    //                 "no size data found in file: %s.",
+     //                image_options->filename);
+
+    return false;
+}
+
+
+
+
+static bool _get_image_properties(ImageOptions *image_options)
+{
+    unsigned char signature[4];
+
+    /* Read 4 bytes to look for the file header/signature. */
+    if (fread(signature, 1, 4, image_options->stream) < 4) 
+    {
+        //LXW_WARN_FORMAT1("worksheet_insert_image()/_opt(): "
+        //                 "couldn't read file type for file: %s.",
+        //                 image_options->filename);
+        return false;
+    }
+
+    if (memcmp(&signature[1], "PNG", 3) == 0) 
+    {
+        if (!_process_png(image_options))
+            return false;
+    }
+    else if (signature[0] == 0xFF && signature[1] == 0xD8) 
+    {
+        if (!_process_jpeg(image_options))
+            return false;
+    }
+    else if (memcmp(signature, "BM", 2) == 0) 
+    {
+        if (!_process_bmp(image_options))
+            return false;
+    }
+    else 
+    {
+        //LXW_WARN_FORMAT1("worksheet_insert_image()/_opt(): "
+        //                 "unsupported image format for file: %s.",
+        //                 image_options->filename);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+
+/*
+ * Simple replacement for libgen.h basename() for compatibility with MSVC. It
+ * handles forward and back slashes. It doesn't copy exactly the return
+ * format of basename().
+ */
+static char* lxw_basename(const char *path)
+{
+
+    char *forward_slash;
+    char *back_slash;
+
+    if (!path)
+        return NULL;
+
+    forward_slash = strrchr(path, '/');
+    back_slash = strrchr(path, '\\');
+
+    if (!forward_slash && !back_slash)
+        return (char *) path;
+
+    if (forward_slash > back_slash)
+        return forward_slash + 1;
+    else
+        return back_slash + 1;
+}
+#endif
+
+
+//
+// Insert an image into the worksheet.
+// Image data is not written in the worksheet section, per se. 
+// The data is written later in the workbook section, then referenced back by the worksheet. 
+// The image doesn’t appear to belong to cell, but instead get a position on the screen.
+//
+// Here we add the reference information to the image, leaving it to the builder to add the
+// actual image bytes to the file.
+//
+Image& worksheet::addImage(const Image& img)
+{
+    Image image (img);
+
+    image.id = workbook().addMedia(image.imagePath);
+    drawings_[image.id] = image;
+
+    return static_cast<Image&>(drawings_[image.id]);
+}
+
+
+
+
+
+
+
+
+
+///////////////////////
+
+
+
+
 bool worksheet::has_frozen_panes() const
 {
     return !d_->views_.empty() && d_->views_.front().has_pane()
